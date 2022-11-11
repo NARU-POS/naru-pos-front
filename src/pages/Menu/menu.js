@@ -15,52 +15,63 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { get } from "../../utils/api";
 
 const theme = createTheme();
-const detailCategoryList = { pasta: ["tomato", "cream", "rose", "oil"], coffee: ["ice", "hot"], tea: ["ice", "hot"] };
 
 export default function Menu() {
-  const [tabsIndex, setTabsIndex] = useState(0);
-  const [menus, setMenus] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [currentCategory, setCurrentCategory] = useState("stake");
-  const [detailCategory, setDetailCategory] = useState([]);
-  const [detailTabsIndex, setDetailTabsIndex] = useState(0);
-  const [currentDetailCategory, setCurrentDetailCategory] = useState("");
+  const [menuList, setMenuList] = useState([]);
+  const [menuMainTabsIndex, setMenuMainTabsIndex] = useState(0);
+  const [menuDetailTabsIndex, setMenuDetailTabsIndex] = useState(0);
+  const [menuDetailCategoryList, setMenuDetailCategoryList] = useState({});
+  const [menuMainCategory, setMenuMainCategory] = useState([]);
+  const [menuDetailCategory, setMenuDetailCategory] = useState([]);
+  const [currentMenuCategory, setCurrentMenuCategory] = useState("");
+  const [currentMenuDetailCategory, setCurrentMenuDetailCategory] = useState("");
 
-  const handleChange = (_event, categoryIndex) => {
-    setTabsIndex(categoryIndex);
-    setCurrentCategory(categories[categoryIndex]);
-    setDetailCategory([]);
-    setDetailTabsIndex(0);
+  const handleMainCategoryChange = (_event, categoryIndex) => {
+    setMenuMainTabsIndex(categoryIndex);
+    setCurrentMenuCategory(menuMainCategory[categoryIndex]);
+    setMenuDetailCategory([]);
+    setMenuDetailTabsIndex(0);
 
-    Object.keys(detailCategoryList).map((detail) => {
-      if (categories[categoryIndex] === detail) {
-        setDetailCategory(detailCategoryList[detail]);
-        setCurrentDetailCategory(detailCategoryList[detail][0]);
-      }
+    Object.keys(menuDetailCategoryList).map((detail) => {
+      if (menuMainCategory[categoryIndex] !== detail) return detail;
+      if (!menuDetailCategoryList.hasOwnProperty(menuMainCategory[categoryIndex])) return detail;
+      setMenuDetailCategory(menuDetailCategoryList[detail]);
+      setCurrentMenuDetailCategory(menuDetailCategoryList[detail][0]);
       return detail;
     });
     window.scrollTo(0, 0);
   };
 
-  const handleDetailChange = (_event, categoryIndex) => {
-    setDetailTabsIndex(categoryIndex);
-    setCurrentDetailCategory(detailCategory[categoryIndex]);
+  const handleDetailCategoryChange = (_event, categoryIndex) => {
+    setMenuDetailTabsIndex(categoryIndex);
+    setCurrentMenuDetailCategory(menuDetailCategory[categoryIndex]);
     window.scrollTo(0, 0);
   };
 
   useEffect(() => {
-    async function getMenuList() {
-      const res = await get("menus");
-      if (res.status !== 200) console.log("잘못된 요청");
+    async function getMenuCategory() {
+      const res = await get("menus/category");
+      if (res.status !== 200) return console.log("잘못된 요청");
+      const mainCategoryList = Object.keys(res.data);
 
-      const filterCategory = res.data.map((menu) => menu.category);
-      const setMenuCategory = new Set(filterCategory);
-      setMenus(res.data);
-      setCategories([...setMenuCategory]);
+      setMenuMainCategory(mainCategoryList);
+      setCurrentMenuCategory(mainCategoryList[0]);
+      setMenuDetailCategoryList(res.data);
+    }
+
+    getMenuCategory();
+  }, []);
+
+  useEffect(() => {
+    async function getMenuList() {
+      if (!currentMenuCategory) return;
+      const res = await get(`menus/${currentMenuCategory}`);
+      if (res.status !== 200) return console.log("잘못된 요청");
+      setMenuList(res.data);
     }
 
     getMenuList();
-  }, []);
+  }, [currentMenuCategory]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -74,20 +85,26 @@ export default function Menu() {
         </Toolbar>
       </AppBar>
       <AppBar position="sticky" sx={{ bgcolor: "white" }}>
-        <Tabs value={tabsIndex} onChange={handleChange} variant="scrollable" scrollButtons={false} aria-label="naru-menu-category">
-          {categories.map((category) => {
+        <Tabs
+          value={menuMainTabsIndex}
+          onChange={handleMainCategoryChange}
+          variant="scrollable"
+          scrollButtons={false}
+          aria-label="naru-menu-category"
+        >
+          {menuMainCategory.map((category) => {
             return <Tab key={category} label={category} />;
           })}
         </Tabs>
-        {detailCategory.length !== 0 && (
+        {menuDetailCategory[0] !== "unused" && menuDetailCategory.length !== 0 && (
           <Tabs
-            value={detailTabsIndex}
-            onChange={handleDetailChange}
+            value={menuDetailTabsIndex}
+            onChange={handleDetailCategoryChange}
             variant="scrollable"
             scrollButtons={false}
             aria-label="naru-menu-detail-category"
           >
-            {detailCategory.map((category) => {
+            {menuDetailCategory.map((category) => {
               return <Tab key={category} label={category} />;
             })}
           </Tabs>
@@ -96,9 +113,9 @@ export default function Menu() {
       <main>
         <Container sx={{ py: 8 }} maxWidth="md">
           <Grid container spacing={3}>
-            {menus.map((menu) => {
-              if (menu.category !== currentCategory) return <div key={menu._id}></div>;
-              if (menu.detailCategory === currentDetailCategory || menu.detailCategory === "unused")
+            {menuList.map((menu) => {
+              if (menu.category !== currentMenuCategory) return <div key={menu._id}></div>;
+              if (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
                 return (
                   <Grid item key={menu._id} xs={12} sm={6} md={4}>
                     <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
