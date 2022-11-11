@@ -34,7 +34,6 @@ export default function Menu() {
 
     Object.keys(menuDetailCategoryList).map((detail) => {
       if (menuMainCategory[categoryIndex] !== detail) return detail;
-      if (!menuDetailCategoryList.hasOwnProperty(menuMainCategory[categoryIndex])) return detail;
       setMenuDetailCategory(menuDetailCategoryList[detail]);
       setCurrentMenuDetailCategory(menuDetailCategoryList[detail][0]);
       return detail;
