@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import AppBar from "@mui/material/AppBar";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import Card from "@mui/material/Card";
@@ -86,6 +86,23 @@ export default function Menu() {
     getMenuList();
   }, [currentMenuCategory]);
 
+  const ShowMenuList = memo(({ menuId, name, description, photoUrl, price }) => {
+    return (
+      <Grid item xs={12} sm={6} md={4}>
+        <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <CardMedia component="img" image={photoUrl} alt={name} />
+          <CardContent sx={{ flexGrow: 1 }}>
+            <Typography gutterBottom variant="h5" component="h2">
+              {name}
+            </Typography>
+            <Typography sx={{ mb: 1, color: "text.secondary" }}>{description}</Typography>
+            <Typography align="right">₩ {price.toLocaleString("ko-KR")}</Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+    );
+  });
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -130,18 +147,13 @@ export default function Menu() {
               if (menu.category !== currentMenuCategory) return null;
               if (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
                 return (
-                  <Grid item key={menu._id} xs={12} sm={6} md={4}>
-                    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                      <CardMedia component="img" image={menu.photo_url} alt={menu.name} />
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography gutterBottom variant="h5" component="h2">
-                          {menu.name}
-                        </Typography>
-                        <Typography sx={{ mb: 1, color: "text.secondary" }}>{menu.description}</Typography>
-                        <Typography align="right">₩ {menu.price.toLocaleString("ko-KR")}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
+                  <ShowMenuList
+                    key={menu._id}
+                    name={menu.name}
+                    description={menu.description}
+                    photoUrl={menu.photo_url}
+                    price={menu.price}
+                  />
                 );
               return null;
             })}
