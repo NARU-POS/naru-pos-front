@@ -11,12 +11,15 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { get } from "../../utils/api";
 
 const theme = createTheme();
 
 export default function Menu() {
+  const [showAlert, setShowAlert] = useState(false);
   const [menuList, setMenuList] = useState([]);
   const [menuMainTabsIndex, setMenuMainTabsIndex] = useState(0);
   const [menuDetailTabsIndex, setMenuDetailTabsIndex] = useState(0);
@@ -47,15 +50,23 @@ export default function Menu() {
     window.scrollTo(0, 0);
   };
 
+  const handleAlertClose = (_event, reason) => {
+    if (reason === "clickaway") return;
+    setShowAlert(false);
+  };
+
   useEffect(() => {
     async function getMenuCategory() {
-      const res = await get("menus/category");
-      if (res.status !== 200) return console.log("잘못된 요청");
-      const mainCategoryList = Object.keys(res.data);
+      try {
+        const res = await get("menus/category");
+        const mainCategoryList = Object.keys(res.data);
 
-      setMenuMainCategory(mainCategoryList);
-      setCurrentMenuCategory(mainCategoryList[0]);
-      setMenuDetailCategoryList(res.data);
+        setMenuMainCategory(mainCategoryList);
+        setCurrentMenuCategory(mainCategoryList[0]);
+        setMenuDetailCategoryList(res.data);
+      } catch {
+        setShowAlert(true);
+      }
     }
 
     getMenuCategory();
@@ -64,9 +75,12 @@ export default function Menu() {
   useEffect(() => {
     async function getMenuList() {
       if (!currentMenuCategory) return;
-      const res = await get(`menus/${currentMenuCategory}`);
-      if (res.status !== 200) return console.log("잘못된 요청");
-      setMenuList(res.data);
+      try {
+        const res = await get(`menus/${currentMenuCategory}`);
+        setMenuList(res.data);
+      } catch {
+        setShowAlert(true);
+      }
     }
 
     getMenuList();
@@ -95,7 +109,7 @@ export default function Menu() {
             return <Tab key={category} label={category} />;
           })}
         </Tabs>
-        {menuDetailCategory[0] !== "unused" && menuDetailCategory.length !== 0 && (
+        {menuDetailCategory[0] !== "unused" && menuDetailCategory.length !== 0 ? (
           <Tabs
             value={menuDetailTabsIndex}
             onChange={handleDetailCategoryChange}
@@ -103,17 +117,17 @@ export default function Menu() {
             scrollButtons={false}
             aria-label="naru-menu-detail-category"
           >
-            {menuDetailCategory.map((category) => {
-              return <Tab key={category} label={category} />;
-            })}
+            {menuDetailCategory.map((category) => (
+              <Tab key={category} label={category} />
+            ))}
           </Tabs>
-        )}
+        ) : null}
       </AppBar>
       <main>
         <Container sx={{ py: 8 }} maxWidth="md">
           <Grid container spacing={3}>
             {menuList.map((menu) => {
-              if (menu.category !== currentMenuCategory) return <div key={menu._id}></div>;
+              if (menu.category !== currentMenuCategory) return null;
               if (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
                 return (
                   <Grid item key={menu._id} xs={12} sm={6} md={4}>
@@ -129,11 +143,14 @@ export default function Menu() {
                     </Card>
                   </Grid>
                 );
-              return <div key={menu._id}></div>;
+              return null;
             })}
           </Grid>
         </Container>
       </main>
+      <Snackbar open={showAlert} autoHideDuration={6000} onClose={handleAlertClose}>
+        <Alert severity="error">카테고리를 불러오는데 실패했습니다.</Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 }
