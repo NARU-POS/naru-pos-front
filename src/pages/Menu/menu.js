@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import AppBar from "@mui/material/AppBar";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import Card from "@mui/material/Card";
@@ -16,8 +16,13 @@ import Alert from "@mui/material/Alert";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { get } from "../../utils/api";
 import { Skeleton } from "@mui/material";
+import { img } from "../../utils/constans";
 
-const theme = createTheme();
+const theme = createTheme({
+  typography: {
+    fontFamily: "Noto Sans KR",
+  },
+});
 
 export default function Menu() {
   const [showAlert, setShowAlert] = useState(false);
@@ -94,7 +99,27 @@ export default function Menu() {
     getMenuList();
   }, [currentMenuCategory, currentMenuDetailCategory]);
 
-  const ShowMenuList = ({ name, description, photoUrl, price }) => {
+  const MenuTitle = ({ name, spicyLevel }) => {
+    return (
+      <>
+        {name}
+        {spicyLevel}
+      </>
+    );
+  };
+
+  const setSpicyLevel = (spicy) => {
+    if (spicy === 0) return null;
+    return new Array(spicy)
+      .fill()
+      .map((level, index) => (
+        <img key={`spicy${index}`} src={img.spicy} style={{ width: "1.5rem", height: "1.1rem" }} alt={`spicy${level}`} />
+      ));
+  };
+
+  const ShowMenuList = ({ menuId, name, description, photoUrl, price, spicy }) => {
+    const spicyLevel = setSpicyLevel(spicy);
+
     return (
       <Grid item xs={12} sm={6} md={4}>
         <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -103,7 +128,7 @@ export default function Menu() {
           </CardMedia>
           <CardContent sx={{ flexGrow: 1 }}>
             <Typography gutterBottom variant="h5" component="h2">
-              {loading ? <Skeleton /> : name}
+              {loading ? <Skeleton /> : <MenuTitle key={menuId} name={name} spicyLevel={spicyLevel} />}
             </Typography>
             <Typography sx={{ mb: 1, color: "text.secondary" }}>{loading ? <Skeleton /> : description}</Typography>
             <Typography align="right">₩ {loading ? <Skeleton /> : price.toLocaleString("ko-KR")}</Typography>
@@ -153,18 +178,20 @@ export default function Menu() {
       <main>
         <Container sx={{ py: 8 }} maxWidth="md">
           <Grid container spacing={3}>
-            {menuList.map((menu) => {
+            {menuList.map((menu, index) => {
               if (
                 menu.category === currentMenuCategory &&
                 (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
               )
                 return (
                   <ShowMenuList
-                    key={menu._id}
+                    key={index}
+                    menuId={menu._id}
                     name={menu.name}
                     description={menu.description}
                     photoUrl={menu.photo_url}
                     price={menu.price}
+                    spicy={menu.spicy}
                   />
                 );
               return null;
