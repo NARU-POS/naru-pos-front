@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect } from "react";
 import AppBar from "@mui/material/AppBar";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import Card from "@mui/material/Card";
@@ -15,6 +15,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { get } from "../../utils/api";
+import { Skeleton } from "@mui/material";
 
 const theme = createTheme();
 
@@ -26,8 +27,9 @@ export default function Menu() {
   const [menuDetailCategoryList, setMenuDetailCategoryList] = useState({});
   const [menuMainCategory, setMenuMainCategory] = useState([]);
   const [menuDetailCategory, setMenuDetailCategory] = useState([]);
-  const [currentMenuCategory, setCurrentMenuCategory] = useState("");
-  const [currentMenuDetailCategory, setCurrentMenuDetailCategory] = useState("");
+  const [currentMenuCategory, setCurrentMenuCategory] = useState("unused");
+  const [currentMenuDetailCategory, setCurrentMenuDetailCategory] = useState("unused");
+  const [loading, setLoading] = useState(false);
 
   const handleMainCategoryChange = (_event, categoryIndex) => {
     setMenuMainTabsIndex(categoryIndex);
@@ -64,8 +66,8 @@ export default function Menu() {
         setMenuMainCategory(mainCategoryList);
         setCurrentMenuCategory(mainCategoryList[0]);
         setMenuDetailCategoryList(res.data);
-      } catch {
-        setShowAlert(true);
+      } catch (err) {
+        if (err.response.status !== 400) setShowAlert(true);
       }
     }
 
@@ -75,33 +77,41 @@ export default function Menu() {
   useEffect(() => {
     async function getMenuList() {
       if (!currentMenuCategory) return;
+      setLoading(true);
+      const img = new Image();
       try {
-        const res = await get(`menus/${currentMenuCategory}`);
+        const res = await get(`menus/${currentMenuCategory}/${currentMenuDetailCategory}`);
         setMenuList(res.data);
-      } catch {
-        setShowAlert(true);
+        img.src = res.data[0].photo_url;
+        img.onload = () => {
+          setLoading(false);
+        };
+      } catch (err) {
+        if (err.response.status !== 400) setShowAlert(true);
       }
     }
 
     getMenuList();
-  }, [currentMenuCategory]);
+  }, [currentMenuCategory, currentMenuDetailCategory]);
 
-  const ShowMenuList = memo(({ menuId, name, description, photoUrl, price }) => {
+  const ShowMenuList = ({ name, description, photoUrl, price }) => {
     return (
       <Grid item xs={12} sm={6} md={4}>
         <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <CardMedia component="img" image={photoUrl} alt={name} />
+          <CardMedia>
+            {loading ? <Skeleton width="100%" height={400} /> : <img width="100%" height="100%" src={photoUrl} alt={name} />}
+          </CardMedia>
           <CardContent sx={{ flexGrow: 1 }}>
             <Typography gutterBottom variant="h5" component="h2">
-              {name}
+              {loading ? <Skeleton /> : name}
             </Typography>
-            <Typography sx={{ mb: 1, color: "text.secondary" }}>{description}</Typography>
-            <Typography align="right">₩ {price.toLocaleString("ko-KR")}</Typography>
+            <Typography sx={{ mb: 1, color: "text.secondary" }}>{loading ? <Skeleton /> : description}</Typography>
+            <Typography align="right">₩ {loading ? <Skeleton /> : price.toLocaleString("ko-KR")}</Typography>
           </CardContent>
         </Card>
       </Grid>
     );
-  });
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -144,8 +154,10 @@ export default function Menu() {
         <Container sx={{ py: 8 }} maxWidth="md">
           <Grid container spacing={3}>
             {menuList.map((menu) => {
-              if (menu.category !== currentMenuCategory) return null;
-              if (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
+              if (
+                menu.category === currentMenuCategory &&
+                (menu.detailCategory === currentMenuDetailCategory || menu.detailCategory === "unused")
+              )
                 return (
                   <ShowMenuList
                     key={menu._id}
