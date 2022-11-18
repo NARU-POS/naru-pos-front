@@ -64,39 +64,40 @@ export default function Menu() {
 
   useEffect(() => {
     async function getMenuCategory() {
-      try {
-        const res = await get("menus/category");
-        const mainCategoryList = Object.keys(res.data);
+      const res = await get("menus/category");
+      const mainCategoryList = Object.keys(res.data);
 
-        setMenuMainCategory(mainCategoryList);
-        setCurrentMenuCategory(mainCategoryList[0]);
-        setMenuDetailCategoryList(res.data);
-      } catch (err) {
-        if (err.response.status !== 400) setShowAlert(true);
-      }
+      setMenuMainCategory(mainCategoryList);
+      setCurrentMenuCategory(mainCategoryList[0]);
+      setMenuDetailCategoryList(res.data);
     }
 
-    getMenuCategory();
+    try {
+      getMenuCategory();
+    } catch (err) {
+      if (err.response.status !== 400) setShowAlert(true);
+    }
   }, []);
 
   useEffect(() => {
     async function getMenuList() {
-      if (!currentMenuCategory) return;
+      if (currentMenuCategory === "unused") return;
       setLoading(true);
       const img = new Image();
-      try {
-        const res = await get(`menus/${currentMenuCategory}/${currentMenuDetailCategory}`);
-        setMenuList(res.data);
-        img.src = res.data[0].photo_url;
-        img.onload = () => {
-          setLoading(false);
-        };
-      } catch (err) {
-        if (err.response.status !== 400) setShowAlert(true);
-      }
+
+      const res = await get(`menus/${currentMenuCategory}/${currentMenuDetailCategory}`);
+      setMenuList(res.data);
+      img.src = res.data[0]?.photo_url;
+      img.onload = () => {
+        setLoading(false);
+      };
     }
 
-    getMenuList();
+    try {
+      getMenuList();
+    } catch (err) {
+      if (err.response.status !== 400) setShowAlert(true);
+    }
   }, [currentMenuCategory, currentMenuDetailCategory]);
 
   const MenuTitle = ({ name, spicyLevel }) => {
