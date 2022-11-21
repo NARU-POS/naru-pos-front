@@ -17,6 +17,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { get } from "../../utils/api";
 import { Skeleton } from "@mui/material";
 import { img } from "../../utils/constans";
+import StickyFooter from "../Footer";
 
 const theme = createTheme({
   typography: {
@@ -203,6 +204,7 @@ export default function Menu() {
       <Snackbar open={showAlert} autoHideDuration={6000} onClose={handleAlertClose}>
         <Alert severity="error">카테고리를 불러오는데 실패했습니다.</Alert>
       </Snackbar>
+      <StickyFooter />
     </ThemeProvider>
   );
 }
