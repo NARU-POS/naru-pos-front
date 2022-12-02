@@ -5,7 +5,7 @@ import AppBar from "@mui/material/AppBar";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@mui/material";
 
-export default function Category({ currentMainCategory, currentDetailCategory }) {
+export default function Category({ currentMainCategory, currentDetailCategory, tableNumber }) {
   const navigate = useNavigate();
   const { data: menuCategory, isLoading } = useGetMenuCategory();
 
@@ -21,12 +21,12 @@ export default function Category({ currentMainCategory, currentDetailCategory })
   const handleMainCategoryChange = (_event, categoryIndex) => {
     const changeMainCategory = menuMainCategoryList[categoryIndex];
     const changeDetailCategory = menuDetailCategoryList[changeMainCategory][0];
-    navigate(`/menus/${changeMainCategory}/${changeDetailCategory}`);
+    navigate(`/menus/${changeMainCategory}/${changeDetailCategory}/${tableNumber}`);
   };
 
   const handleDetailCategoryChange = (_event, categoryIndex) => {
     const changeDetailCategory = menuDetailCategoryList[currentMainCategory][categoryIndex];
-    navigate(`/menus/${currentMainCategory}/${changeDetailCategory}`);
+    navigate(`/menus/${currentMainCategory}/${changeDetailCategory}/${tableNumber}`);
   };
 
   return (
