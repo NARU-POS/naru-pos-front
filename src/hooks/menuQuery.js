@@ -1,5 +1,5 @@
-import { useQuery } from "react-query";
-import { get } from "../utils/api";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { get, del } from "../utils/api";
 import toast from "react-hot-toast";
 
 export function useGetMenuCategory() {
@@ -29,4 +29,15 @@ export function useGetMenuList(mainCategory, detailCategory) {
       cacheTime: 5000,
     }
   );
+}
+
+export function useDeleteMenu(menuId) {
+  const queryClient = useQueryClient();
+  return useMutation(async (loginData) => await del(`menus/${menuId}`, loginData), {
+    onSuccess: (res) => {
+      queryClient.invalidateQueries("menuList");
+      toast.success(res.data.message);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 }
