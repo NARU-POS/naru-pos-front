@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import { Button, Skeleton } from "@mui/material";
@@ -17,6 +17,8 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import MenuItem from "@mui/material/MenuItem";
+import { toast } from "react-hot-toast";
+import { put, uploadFile } from "../../utils/api";
 
 const setSpicyLevel = (spicy) => {
   if (spicy === 0) return null;
@@ -39,6 +41,7 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
   const menuCategory = queryClient.getQueryData("menuMainCategory");
   const { isLogin, userState } = queryClient.getQueryData("userState");
   const [open, setOpen] = useState(false);
+  const [menuId, setMenuId] = useState("");
   const [updateData, setUpdateData] = useState({
     name: "",
     description: "",
@@ -50,14 +53,30 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
     status: "unused",
     photo_url: "",
   });
+  const refFileUpload = useRef();
+
+  const handleUploadFile = async (e) => {
+    e.preventDefault();
+    if (e.target.files[0].size >= 5242880) return toast.error("이미지는 5MB 이하만 업로드 가능합니다.");
+
+    const formData = new FormData();
+    formData.append("menuImage", e.target.files[0]);
+
+    try {
+      const recvImage = await uploadFile(`menus/uploadImage`, formData);
+      setUpdateData({ ...updateData, photo_url: recvImage });
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   useEffect(() => {
     refetch();
   }, [currentMainCategory, currentDetailCategory, refetch]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    console.log(updateData);
+    put(`menus/${menuId}`, updateData);
   }
 
   function handleChange(e, key) {
@@ -71,7 +90,9 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
   };
 
   const handleClickOpen = (props) => {
-    setUpdateData(props);
+    const { menuId, ...data } = props;
+    setMenuId(menuId);
+    setUpdateData(data);
     setOpen(true);
   };
 
@@ -91,7 +112,7 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
 
   const menuDetailCategory = [
     ...new Set(
-      Object.values(menuCategory).reduce((acc, cur) => {
+      Object.values(menuCategory)?.reduce((acc, cur) => {
         const newArr = [...acc, ...cur];
         return newArr;
       }, [])
@@ -99,7 +120,7 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
   ];
 
   function ShowMenuList(props) {
-    const { menuId, name, description, photoUrl, price, spicy, status, notice } = props;
+    const { menuId, name, description, photo_url, price, spicy, status, notice } = props;
     const spicyLevel = setSpicyLevel(spicy);
     const menuStatus = setMenuStatus(status);
 
@@ -108,7 +129,7 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
         <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
           {description.length !== 0 ? (
             <CardMedia>
-              <img width="100%" height="100%" src={photoUrl} alt={name} />
+              <img width="100%" height="100%" src={photo_url} alt={name} />
             </CardMedia>
           ) : null}
           <CardContent sx={{ flexGrow: 1 }}>
@@ -148,7 +169,7 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
                   menuId={menu._id}
                   name={menu.name}
                   description={menu.description}
-                  photoUrl={menu.photo_url}
+                  photo_url={menu.photo_url}
                   price={menu.price}
                   spicy={menu.spicy}
                   status={menu.status}
@@ -164,6 +185,11 @@ export default function MenuList({ currentMainCategory, currentDetailCategory })
       <Dialog open={open} onClose={handleClose}>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+            <img width="100%" height="100%" src={updateData.photo_url} alt={updateData.name} />
+            <input type="file" ref={refFileUpload} accept="image/*" onChange={handleUploadFile} style={{ display: "none" }} />
+            <Button variant="contained" onClick={() => refFileUpload.current.click()}>
+              사진 변경
+            </Button>
             <TextField value={updateData.name} margin="dense" id="name" label="이름" type="name" fullWidth variant="standard" />
             <TextField
               value={updateData.description}
